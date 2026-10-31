@@ -181,55 +181,60 @@ public class MainActivity extends Activity {
         }
 
         void drawDashboard(Canvas c,float w,float h) {
-            float top=h*(1f-reveal);
-            p.setColor(0xff071a31); c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p);
-            p.setColor(0xff9beaff); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(1.3f));
-            c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p); p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.WHITE); p.setTextSize(dp(22)); p.setTypeface(Typeface.DEFAULT_BOLD);
-            c.drawText("ICE DASHBOARD",dp(22),top+dp(43),p);
-            drawGlassCard(c,dp(18),top+dp(57),w-dp(18),top+dp(99),dp(14));
-            p.setColor(0xffbfeeff); p.setTextSize(dp(12)); p.setTypeface(Typeface.DEFAULT);
-            c.drawText("⌕  "+(searchText.isEmpty()?"Search apps...":searchText),dp(32),top+dp(83),p);
-            String[] cats={"All Apps","Tools","Games","Social"};
-            float tabW=(w-dp(36))/4f;
-            for(int i=0;i<cats.length;i++) {
-                float x=dp(18)+i*tabW;
+            float panelH=Math.min(dp(218),h*0.34f), top=h-panelH;
+            float left=dp(14), right=w-dp(14), split=left+dp(137);
+            p.setColor(0xd9071830);
+            c.drawRoundRect(left,top,right,h-dp(12),dp(22),dp(22),p);
+            p.setColor(0x99a8eaff); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(1.1f));
+            c.drawRoundRect(left,top,right,h-dp(12),dp(22),dp(22),p); p.setStyle(Paint.Style.FILL);
+            float cx=w/2f, ay=top-dp(4);
+            p.setColor(0xff8feaff); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(3));
+            for(int k=0;k<3;k++) { Path a=new Path(); float yy=ay-dp(22-k);
+                a.moveTo(cx-dp(9),yy-dp(5)); a.lineTo(cx,yy+dp(5)); a.lineTo(cx+dp(9),yy-dp(5)); c.drawPath(a,p); }
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(0x668fc9ed); c.drawLine(split,top+dp(14),split,h-dp(25),p);
+            p.setColor(Color.WHITE); p.setTypeface(Typeface.create("sans-serif-light",0)); p.setTextSize(dp(29));
+            c.drawText(new java.text.SimpleDateFormat("HH:mm",Locale.getDefault()).format(new Date()),left+dp(15),top+dp(48),p);
+            p.setColor(0xffd7efff); p.setTypeface(Typeface.DEFAULT); p.setTextSize(dp(10));
+            c.drawText(new java.text.SimpleDateFormat("EEE, dd MMM",Locale.getDefault()).format(new Date()),left+dp(16),top+dp(68),p);
+            int battery=batteryPercent();
+            c.drawText("❄  ICE BLUE  •  "+(battery>=0?battery+"%":""),left+dp(16),top+dp(88),p);
+            c.drawText("Love day  ♡",left+dp(16),top+dp(105),p);
+            String[] cats={"Tools","Games","Social","All Apps"};
+            float areaL=split+dp(7), areaW=right-areaL-dp(5), tabW=areaW/4f;
+            for(int i=0;i<cats.length;i++) { float tx=areaL+i*tabW;
                 boolean active=selectedCategory.equals(cats[i]);
-                p.setColor(active?0xff9beaff:0xffb6cde0); p.setTextSize(dp(10));
+                p.setColor(active?0xffe5f8ff:0xffb8cde0); p.setTextSize(dp(9));
                 p.setTypeface(active?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);
-                c.drawText(cats[i],x+dp(5),top+dp(123),p);
-                if(active) { p.setColor(0xff45cfff); c.drawRoundRect(x+dp(4),top+dp(129),x+tabW-dp(9),top+dp(131),dp(2),dp(2),p); }
+                c.drawText(cats[i],tx+dp(4),top+dp(24),p);
+                if(active) { p.setColor(0xff65dfff); c.drawRoundRect(tx+dp(3),top+dp(29),tx+tabW-dp(5),top+dp(31),dp(2),dp(2),p); }
             }
-            ArrayList<AppEntry> shown=visibleApps();
-            p.setColor(0xffd5f3ff); p.setTextSize(dp(9)); p.setTypeface(Typeface.DEFAULT);
-            c.drawText(shown.size()+" aplikasi",dp(23),top+dp(149),p);
-            int cols=4; float cell=(w-dp(34))/cols; float startY=top+dp(184);
-            for(int i=0;i<shown.size();i++) {
-                int col=i%cols,row=i/cols; float x=dp(17)+col*cell+cell/2f,y=startY+row*dp(82);
-                if(y>h-dp(48)) break;
-                p.setColor(0x5539cfff); c.drawCircle(x,y,dp(23),p);
-                AppEntry a=shown.get(i); a.icon.setBounds((int)(x-dp(16)),(int)(y-dp(16)),(int)(x+dp(16)),(int)(y+dp(16))); a.icon.draw(c);
-                p.setColor(Color.WHITE); p.setTextSize(dp(9));
-                String label=a.label.length()>12?a.label.substring(0,11)+"…":a.label;
-                c.drawText(label,x-p.measureText(label)/2,y+dp(38),p);
+            ArrayList<AppEntry> shown=visibleApps(); int cols=6; float cell=areaW/cols, firstY=top+dp(60);
+            for(int i=0;i<shown.size()&&i<12;i++) { int col=i%cols,row=i/cols;
+                float x=areaL+col*cell+cell/2f,y=firstY+row*dp(55); AppEntry a=shown.get(i);
+                p.setColor(0x5547bde9); c.drawRoundRect(x-dp(17),y-dp(17),x+dp(17),y+dp(17),dp(8),dp(8),p);
+                a.icon.setBounds((int)(x-dp(14)),(int)(y-dp(14)),(int)(x+dp(14)),(int)(y+dp(14))); a.icon.draw(c);
+                p.setColor(Color.WHITE); p.setTextSize(dp(7)); p.setTypeface(Typeface.DEFAULT);
+                String label=a.label.length()>9?a.label.substring(0,8)+"…":a.label;
+                c.drawText(label,x-p.measureText(label)/2,y+dp(27),p);
             }
-            p.setColor(0xff9beaff); p.setTextSize(dp(10)); c.drawText("SWIPE DOWN TO CLOSE",dp(22),h-dp(24),p);
         }
-        void launchAppAt(float x, float y) {
-            if (reveal < 0.5f) return;
-            float top = getHeight() * (1f - reveal);
-            float cell = (getWidth() - dp(34)) / 4f;
-            float startY = top + dp(184);
-            if (y < startY - dp(40)) return;
-            int col = (int)((x - dp(17)) / cell);
-            int row = (int)((y - startY + dp(41)) / dp(82));
-            if (col < 0 || col >= 4 || row < 0) return;
-            int index = row * 4 + col;
-            ArrayList<AppEntry> shown=visibleApps();
-            if (index < 0 || index >= shown.size()) return;
-            float centerY = startY + row * dp(82);
-            if (Math.abs(y - centerY) > dp(43)) return;
-            launchApp(shown.get(index));
+        void launchAppAt(float x,float y) {
+            if(reveal<0.5f) return;
+            float panelH=Math.min(dp(218),getHeight()*0.34f), top=getHeight()-panelH;
+            float left=dp(14), right=getWidth()-dp(14), split=left+dp(137);
+            if(x<split) return;
+            float areaL=split+dp(7), areaW=right-areaL-dp(5), tabW=areaW/4f;
+            if(y>=top+dp(4)&&y<=top+dp(38)) {
+                int tab=(int)((x-areaL)/tabW); String[] cats={"Tools","Games","Social","All Apps"};
+                if(tab>=0&&tab<4) { selectedCategory=cats[tab]; invalidate(); } return;
+            }
+            float cell=areaW/6f, firstY=top+dp(60);
+            if(y<firstY-dp(18)) return;
+            int col=(int)((x-areaL)/cell), row=(int)((y-firstY+dp(18))/dp(55));
+            if(col<0||col>=6||row<0||row>1) return;
+            int index=row*6+col; ArrayList<AppEntry> shown=visibleApps();
+            if(index<shown.size()&&index<12) launchApp(shown.get(index));
         }
 
         @Override public boolean performClick() {
@@ -253,15 +258,8 @@ public class MainActivity extends Activity {
                     float dx=x-downX, dy=y-downY;
                     if (Math.abs(dx)<dp(12) && Math.abs(dy)<dp(12)) {
                         performClick();
-                        if (reveal >= 0.5f) {
-                            float top=getHeight()*(1f-reveal);
-                            if (y>=top+dp(57) && y<=top+dp(99)) showSearchDialog();
-                            else if (y>=top+dp(103) && y<=top+dp(137)) {
-                                int tab=(int)((x-dp(18))/((getWidth()-dp(36))/4f));
-                                String[] cats={"All Apps","Tools","Games","Social"};
-                                if(tab>=0&&tab<cats.length) { selectedCategory=cats[tab]; invalidate(); }
-                            } else launchAppAt(x,y);
-                        } else launchHomeAppAt(x,y);
+                        if (reveal >= 0.5f) launchAppAt(x,y);
+                        else launchHomeAppAt(x,y);
                     } else if (dy < -dp(45)) {
                         reveal=1f;
                     } else if (dy > dp(45)) {
