@@ -60,8 +60,12 @@ public class MainActivity extends Activity {
                 float y=h*(0.12f+(i/3)*0.22f)+(fingerY-h/2)*0.012f;
                 c.drawCircle(x,y,dp(30+(i%3)*10),p);
             }
-            drawHome(c,w,h);
-            if(reveal>0.01f) drawDashboard(c,w,h);
+            if (reveal >= 0.5f) {
+                // Dashboard is a full-screen scene; only its app dock is anchored at the bottom.
+                drawDashboard(c,w,h);
+            } else {
+                drawHome(c,w,h);
+            }
         }
 
         void drawGlassCard(Canvas c,float left,float top,float right,float bottom,float radius) {
@@ -181,6 +185,14 @@ public class MainActivity extends Activity {
         }
 
         void drawDashboard(Canvas c,float w,float h) {
+            // Full-screen dashboard canvas. Do not leave the home-screen widgets visible behind it.
+            p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff061326,0xff102f50,0xff06172d},null,Shader.TileMode.CLAMP));
+            c.drawRect(0,0,w,h,p); p.setShader(null);
+            p.setColor(0x1a48bfff);
+            for(int i=0;i<12;i++) {
+                float gx=w*(0.08f+(i%3)*0.42f), gy=h*(0.08f+(i/3)*0.23f);
+                c.drawCircle(gx,gy,dp(34+(i%3)*10),p);
+            }
             float panelH=Math.min(dp(218),h*0.34f), top=h-panelH;
             float left=dp(14), right=w-dp(14), split=left+dp(137);
             p.setColor(0xd9071830);
