@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
 
     class LunaView extends View {
         Paint p = new Paint(3);
-        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;
+        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;\n        String searchText = \"\";\n        String selectedCategory = \"All Apps\";
         ArrayList<AppEntry> apps = new ArrayList<>();
         float density;
         LunaView() {
@@ -147,26 +147,71 @@ public class MainActivity extends Activity {
             int index=row*4+col;
             if(index>=0&&index<apps.size()&&index<8) launchApp(apps.get(index));
         }
+        ArrayList<AppEntry> visibleApps() {
+            ArrayList<AppEntry> result = new ArrayList<>();
+            String needle = searchText.toLowerCase(Locale.getDefault());
+            for (AppEntry a : apps) {
+                String meta = (a.label + " " + a.pkg).toLowerCase(Locale.getDefault());
+                if (!needle.isEmpty() && !meta.contains(needle)) continue;
+                if (!"All Apps".equals(selectedCategory)) {
+                    boolean match;
+                    if ("Games".equals(selectedCategory)) match = meta.contains("game") || meta.contains("play") || meta.contains("pubg") || meta.contains("mobile.legends") || meta.contains("roblox") || meta.contains("genshin");
+                    else if ("Social".equals(selectedCategory)) match = meta.contains("social") || meta.contains("whatsapp") || meta.contains("instagram") || meta.contains("facebook") || meta.contains("telegram") || meta.contains("tiktok") || meta.contains("discord") || meta.contains("messenger") || meta.contains("twitter") || meta.contains("x.");
+                    else match = meta.contains("settings") || meta.contains("camera") || meta.contains("file") || meta.contains("clock") || meta.contains("calendar") || meta.contains("calculator") || meta.contains("bluetooth") || meta.contains("browser") || meta.contains("chrome") || meta.contains("maps");
+                    if (!match) continue;
+                }
+                result.add(a);
+            }
+            return result;
+        }
+
+        void showSearchDialog() {
+            final android.widget.EditText edit = new android.widget.EditText(MainActivity.this);
+            edit.setSingleLine(true);
+            edit.setText(searchText);
+            edit.setHint("Nama aplikasi...");
+            new android.app.AlertDialog.Builder(MainActivity.this)
+                .setTitle("Cari aplikasi")
+                .setView(edit)
+                .setNegativeButton("Batal", (d,w) -> {})
+                .setPositiveButton("Cari", (d,w) -> { searchText = edit.getText().toString().trim(); invalidate(); })
+                .show();
+        }
+
         void drawDashboard(Canvas c,float w,float h) {
             float top=h*(1f-reveal);
             p.setColor(0xf2091b33); c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p);
             p.setColor(0xff9beaff); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(1.3f));
             c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p); p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.WHITE); p.setTextSize(dp(23)); p.setTypeface(Typeface.DEFAULT_BOLD);
-            c.drawText("ICE DASHBOARD",dp(25),top+dp(52),p);
-            p.setTextSize(dp(11)); p.setTypeface(Typeface.DEFAULT); p.setColor(0xffbfeeff);
-            c.drawText("Tap an app to launch",dp(25),top+dp(73),p);
-            int cols=4; float cell=(w-dp(34))/cols; float startY=top+dp(106);
-            for(int i=0;i<apps.size() && i<48;i++) {
+            p.setColor(Color.WHITE); p.setTextSize(dp(22)); p.setTypeface(Typeface.DEFAULT_BOLD);
+            c.drawText("ICE DASHBOARD",dp(22),top+dp(43),p);
+            drawGlassCard(c,dp(18),top+dp(57),w-dp(18),top+dp(99),dp(14));
+            p.setColor(0xffbfeeff); p.setTextSize(dp(12)); p.setTypeface(Typeface.DEFAULT);
+            c.drawText("⌕  "+(searchText.isEmpty()?"Search apps...":searchText),dp(32),top+dp(83),p);
+            String[] cats={"All Apps","Tools","Games","Social"};
+            float tabW=(w-dp(36))/4f;
+            for(int i=0;i<cats.length;i++) {
+                float x=dp(18)+i*tabW;
+                boolean active=selectedCategory.equals(cats[i]);
+                p.setColor(active?0xff9beaff:0xffb6cde0); p.setTextSize(dp(10));
+                p.setTypeface(active?Typeface.DEFAULT_BOLD:Typeface.DEFAULT);
+                c.drawText(cats[i],x+dp(5),top+dp(123),p);
+                if(active) { p.setColor(0xff45cfff); c.drawRoundRect(x+dp(4),top+dp(129),x+tabW-dp(9),top+dp(131),dp(2),dp(2),p); }
+            }
+            ArrayList<AppEntry> shown=visibleApps();
+            p.setColor(0xffd5f3ff); p.setTextSize(dp(9)); p.setTypeface(Typeface.DEFAULT);
+            c.drawText(shown.size()+" aplikasi",dp(23),top+dp(149),p);
+            int cols=4; float cell=(w-dp(34))/cols; float startY=top+dp(184);
+            for(int i=0;i<shown.size() && i<48;i++) {
                 int col=i%cols,row=i/cols; float x=dp(17)+col*cell+cell/2f,y=startY+row*dp(82);
-                if(y>h-dp(35)) break;
+                if(y>h-dp(48)) break;
                 p.setColor(0x5539cfff); c.drawCircle(x,y,dp(23),p);
-                AppEntry a=apps.get(i); a.icon.setBounds((int)(x-dp(16)),(int)(y-dp(16)),(int)(x+dp(16)),(int)(y+dp(16))); a.icon.draw(c);
+                AppEntry a=shown.get(i); a.icon.setBounds((int)(x-dp(16)),(int)(y-dp(16)),(int)(x+dp(16)),(int)(y+dp(16))); a.icon.draw(c);
                 p.setColor(Color.WHITE); p.setTextSize(dp(9));
                 String label=a.label.length()>12?a.label.substring(0,11)+"…":a.label;
                 c.drawText(label,x-p.measureText(label)/2,y+dp(38),p);
             }
-            p.setColor(0xff9beaff); p.setTextSize(dp(10)); c.drawText("SWIPE DOWN TO CLOSE",dp(25),h-dp(24),p);
+            p.setColor(0xff9beaff); p.setTextSize(dp(10)); c.drawText("SWIPE DOWN TO CLOSE",dp(22),h-dp(24),p);
         }
         void launchAppAt(float x, float y) {
             if (reveal < 0.5f) return;
@@ -178,10 +223,11 @@ public class MainActivity extends Activity {
             int row = (int)((y - startY + dp(41)) / dp(82));
             if (col < 0 || col >= 4 || row < 0) return;
             int index = row * 4 + col;
-            if (index < 0 || index >= apps.size() || index >= 48) return;
+            ArrayList<AppEntry> shown=visibleApps();
+            if (index < 0 || index >= shown.size() || index >= 48) return;
             float centerY = startY + row * dp(82);
             if (Math.abs(y - centerY) > dp(43)) return;
-            launchApp(apps.get(index));
+            launchApp(shown.get(index));
         }
 
         @Override public boolean performClick() {
@@ -205,7 +251,15 @@ public class MainActivity extends Activity {
                     float dx=x-downX, dy=y-downY;
                     if (Math.abs(dx)<dp(12) && Math.abs(dy)<dp(12)) {
                         performClick();
-                        if (reveal >= 0.5f) launchAppAt(x,y); else launchHomeAppAt(x,y);
+                        if (reveal >= 0.5f) {
+                            float top=getHeight()*(1f-reveal);
+                            if (y>=top+dp(57) && y<=top+dp(99)) showSearchDialog();
+                            else if (y>=top+dp(103) && y<=top+dp(137)) {
+                                int tab=(int)((x-dp(18))/((getWidth()-dp(36))/4f));
+                                String[] cats={"All Apps","Tools","Games","Social"};
+                                if(tab>=0&&tab<cats.length) { selectedCategory=cats[tab]; invalidate(); }
+                            } else launchAppAt(x,y);
+                        } else launchHomeAppAt(x,y);
                     } else if (dy < -dp(45)) {
                         reveal=1f;
                     } else if (dy > dp(45)) {
