@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
 
     class LunaView extends View {
         Paint p = new Paint(3);
-        float downX, downY, fingerX, fingerY, reveal = 0f;
+        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;
         ArrayList<AppEntry> apps = new ArrayList<>();
         float density;
         LunaView() {
@@ -87,20 +87,63 @@ public class MainActivity extends Activity {
             }
             p.setColor(0xff9beaff); p.setTextSize(dp(10)); c.drawText("SWIPE DOWN TO CLOSE",dp(25),h-dp(24),p);
         }
+        void launchAppAt(float x, float y) {
+            if (reveal < 0.5f) return;
+            float top = getHeight() * (1f - reveal);
+            float cell = (getWidth() - dp(34)) / 4f;
+            float startY = top + dp(106);
+            if (y < startY - dp(40)) return;
+            int col = (int)((x - dp(17)) / cell);
+            int row = (int)((y - startY + dp(41)) / dp(82));
+            if (col < 0 || col >= 4 || row < 0) return;
+            int index = row * 4 + col;
+            if (index < 0 || index >= apps.size() || index >= 48) return;
+            float centerY = startY + row * dp(82);
+            if (Math.abs(y - centerY) > dp(43)) return;
+            AppEntry app = apps.get(index);
+            Intent launch = getPackageManager().getLaunchIntentForPackage(app.pkg);
+            if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try { startActivity(launch); }
+                catch (Exception ex) {
+                    android.widget.Toast.makeText(MainActivity.this, "Tidak dapat membuka " + app.label, android.widget.Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                android.widget.Toast.makeText(MainActivity.this, "Aplikasi tidak memiliki layar peluncur", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        @Override public boolean performClick() {
+            super.performClick();
+            return true;
+        }
+
         @Override public boolean onTouchEvent(MotionEvent e) {
-            float x=e.getX(),y=e.getY();
+            float x=e.getX(), y=e.getY();
             switch(e.getAction()) {
-                case MotionEvent.ACTION_DOWN: downX=x; downY=y; fingerX=x; fingerY=y; invalidate(); return true;
-                case MotionEvent.ACTION_MOVE:
-                    fingerX=x; fingerY=y; float dy=y-downY;
-                    if(dy< -dp(12)) reveal=Math.min(1f,Math.max(reveal,-dy/(getHeight()*0.65f)));
-                    else if(dy>dp(12)) reveal=Math.max(0f,reveal-dy/(getHeight()*0.8f));
+                case MotionEvent.ACTION_DOWN:
+                    downX=x; downY=y; fingerX=x; fingerY=y; revealAtDown=reveal;
                     invalidate(); return true;
-                case MotionEvent.ACTION_UP:
-                    float delta=y-downY;
-                    if(delta< -dp(45)) reveal=1f;
-                    else if(delta>dp(45)) reveal=0f;
-                    else reveal=reveal>0.5f?1f:0f;
+                case MotionEvent.ACTION_MOVE: {
+                    fingerX=x; fingerY=y;
+                    float dy=y-downY;
+                    reveal=Math.max(0f,Math.min(1f,revealAtDown - dy/(getHeight()*0.65f)));
+                    invalidate(); return true;
+                }
+                case MotionEvent.ACTION_UP: {
+                    float dx=x-downX, dy=y-downY;
+                    if (Math.abs(dx)<dp(12) && Math.abs(dy)<dp(12)) {
+                        performClick();
+                        launchAppAt(x,y);
+                    } else if (dy < -dp(45)) {
+                        reveal=1f;
+                    } else if (dy > dp(45)) {
+                        reveal=0f;
+                    }
+                    invalidate(); return true;
+                }
+                case MotionEvent.ACTION_CANCEL:
+                    reveal = reveal > 0.5f ? 1f : 0f;
                     invalidate(); return true;
             }
             return true;
