@@ -217,7 +217,7 @@ public class MainActivity extends Activity {
             if (reveal < 0.5f) return;
             float top = getHeight() * (1f - reveal);
             float cell = (getWidth() - dp(34)) / 4f;
-            float startY = top + dp(106);
+            float startY = top + dp(184);
             if (y < startY - dp(40)) return;
             int col = (int)((x - dp(17)) / cell);
             int row = (int)((y - startY + dp(41)) / dp(82));
