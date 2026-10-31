@@ -182,7 +182,7 @@ public class MainActivity extends Activity {
 
         void drawDashboard(Canvas c,float w,float h) {
             float top=h*(1f-reveal);
-            p.setColor(0xf2091b33); c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p);
+            p.setColor(0xff071a31); c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p);
             p.setColor(0xff9beaff); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(1.3f));
             c.drawRoundRect(dp(9),top+dp(9),w-dp(9),h-dp(9),dp(24),dp(24),p); p.setStyle(Paint.Style.FILL);
             p.setColor(Color.WHITE); p.setTextSize(dp(22)); p.setTypeface(Typeface.DEFAULT_BOLD);
