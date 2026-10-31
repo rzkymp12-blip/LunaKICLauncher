@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.*;
+import android.animation.ValueAnimator;
+import android.view.animation.PathInterpolator;
 import android.view.*;
 import java.util.*;
 
@@ -26,7 +28,7 @@ public class MainActivity extends Activity {
     class LunaView extends View {
         Paint p = new Paint(3);
         float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;
-        boolean horizontalSwipe = false;
+        ValueAnimator snapAnimator;
         String searchText = "";
         String selectedCategory = "All Apps";
         ArrayList<AppEntry> apps = new ArrayList<>();
@@ -50,6 +52,18 @@ public class MainActivity extends Activity {
             Collections.sort(apps, (a,b) -> a.label.compareToIgnoreCase(b.label));
         }
         float dp(float v) { return v*density; }
+
+        void settleReveal(float target) {
+            if (snapAnimator != null) snapAnimator.cancel();
+            snapAnimator = ValueAnimator.ofFloat(reveal, target);
+            snapAnimator.setDuration(420);
+            snapAnimator.setInterpolator(new PathInterpolator(0.22f, 1f, 0.36f, 1f));
+            snapAnimator.addUpdateListener(a -> {
+                reveal = (Float)a.getAnimatedValue();
+                invalidate();
+            });
+            snapAnimator.start();
+        }
         @Override protected void onDraw(Canvas c) {
             float w=getWidth(), h=getHeight();
             p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff061326,0xff103957,0xff07172d},null,Shader.TileMode.CLAMP));
@@ -62,10 +76,12 @@ public class MainActivity extends Activity {
                 c.drawCircle(x,y,dp(30+(i%3)*10),p);
             }
             drawHome(c,w,h);
-            if (reveal > 0.001f) {
+            // Dashboard rises from the bottom with a soft, character-like ease.
+            float eased = reveal * reveal * (3f - 2f * reveal);
+            if (eased > 0.001f) {
                 int save=c.save();
-                float offset=(1f-reveal)*(horizontalSwipe?w:h);
-                if(horizontalSwipe) c.translate(-offset,0); else c.translate(0,offset);
+                float offset=(1f-eased)*h;
+                c.translate(0,offset);
                 drawDashboard(c,w,h);
                 c.restoreToCount(save);
             }
@@ -261,17 +277,16 @@ public class MainActivity extends Activity {
             float x=e.getX(), y=e.getY();
             switch(e.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    if (snapAnimator != null) snapAnimator.cancel();
                     downX=x; downY=y; fingerX=x; fingerY=y; revealAtDown=reveal;
                     invalidate(); return true;
                 case MotionEvent.ACTION_MOVE: {
                     fingerX=x; fingerY=y;
                     float dx=x-downX, dy=y-downY;
-                    if (Math.abs(dx)>dp(10) || Math.abs(dy)>dp(10))
-                        horizontalSwipe=Math.abs(dx)>Math.abs(dy);
-                    if(horizontalSwipe)
-                        reveal=Math.max(0f,Math.min(1f,revealAtDown - dx/(getWidth()*0.72f)));
-                    else
+                    // Only vertical gestures control the dashboard. Horizontal swipes do nothing.
+                    if (Math.abs(dy)>dp(10) && Math.abs(dy)>Math.abs(dx)*1.15f) {
                         reveal=Math.max(0f,Math.min(1f,revealAtDown - dy/(getHeight()*0.72f)));
+                    }
                     invalidate(); return true;
                 }
                 case MotionEvent.ACTION_UP: {
@@ -280,18 +295,16 @@ public class MainActivity extends Activity {
                         performClick();
                         if (reveal >= 0.5f) launchAppAt(x,y);
                         else launchHomeAppAt(x,y);
+                    } else if (Math.abs(dy)>Math.abs(dx)*1.15f && Math.abs(dy)>dp(45)) {
+                        // Swipe up opens; swipe down closes.
+                        settleReveal(dy<0f ? 1f : 0f);
                     } else {
-                        float primary=horizontalSwipe?dx:dy;
-                        boolean open=horizontalSwipe?primary< -dp(45):primary< -dp(45);
-                        boolean close=primary>dp(45);
-                        if(open) reveal=1f;
-                        else if(close) reveal=0f;
-                        else reveal=revealAtDown>=0.5f?1f:0f;
+                        settleReveal(revealAtDown>=0.5f?1f:0f);
                     }
                     invalidate(); return true;
                 }
                 case MotionEvent.ACTION_CANCEL:
-                    reveal = reveal > 0.5f ? 1f : 0f;
+                    settleReveal(revealAtDown>=0.5f?1f:0f);
                     invalidate(); return true;
             }
             return true;
