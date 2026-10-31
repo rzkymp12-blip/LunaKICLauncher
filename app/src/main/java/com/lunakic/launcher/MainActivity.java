@@ -25,7 +25,9 @@ public class MainActivity extends Activity {
 
     class LunaView extends View {
         Paint p = new Paint(3);
-        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;\n        String searchText = \"\";\n        String selectedCategory = \"All Apps\";
+        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;
+        String searchText = "";
+        String selectedCategory = "All Apps";
         ArrayList<AppEntry> apps = new ArrayList<>();
         float density;
         LunaView() {
