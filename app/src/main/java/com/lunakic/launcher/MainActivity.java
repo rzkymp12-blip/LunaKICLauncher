@@ -25,7 +25,8 @@ public class MainActivity extends Activity {
 
     class LunaView extends View {
         Paint p = new Paint(3);
-        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;\n        boolean horizontalSwipe = false;
+        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;
+        boolean horizontalSwipe = false;
         String searchText = "";
         String selectedCategory = "All Apps";
         ArrayList<AppEntry> apps = new ArrayList<>();
