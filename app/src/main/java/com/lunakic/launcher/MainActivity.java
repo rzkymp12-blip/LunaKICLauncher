@@ -49,22 +49,103 @@ public class MainActivity extends Activity {
         float dp(float v) { return v*density; }
         @Override protected void onDraw(Canvas c) {
             float w=getWidth(), h=getHeight();
-            p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff07152b,0xff12385a,0xff07152b},null,Shader.TileMode.CLAMP));
+            p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff061326,0xff103957,0xff07172d},null,Shader.TileMode.CLAMP));
             c.drawRect(0,0,w,h,p); p.setShader(null);
-            // Temporary abstract Luna-stage backdrop; character artwork will be added in the next asset pass.
-            p.setColor(0x2239cfff);
-            for(int i=0;i<9;i++) {
-                float x=w*(0.12f+(i%3)*0.38f)+(fingerX-w/2)*0.012f;
-                float y=h*(0.27f+(i/3)*0.19f)+(fingerY-h/2)*0.012f;
-                c.drawCircle(x,y,dp(34+(i%3)*9),p);
+            // Ice-blue ambient glow follows the user's finger.
+            p.setColor(0x1839cfff);
+            for(int i=0;i<10;i++) {
+                float x=w*(0.08f+(i%3)*0.42f)+(fingerX-w/2)*0.012f;
+                float y=h*(0.12f+(i/3)*0.22f)+(fingerY-h/2)*0.012f;
+                c.drawCircle(x,y,dp(30+(i%3)*10),p);
             }
-            p.setColor(Color.WHITE); p.setTypeface(Typeface.create("sans-serif-light",0));
-            p.setTextSize(dp(15)); c.drawText("LUNA  •  KIC",dp(24),dp(52),p);
-            p.setTextSize(dp(46)); c.drawText(new java.text.SimpleDateFormat("HH:mm",Locale.getDefault()).format(new Date()),dp(24),dp(112),p);
-            p.setTextSize(dp(13)); p.setColor(0xffd8f4ff);
-            c.drawText(new java.text.SimpleDateFormat("EEEE, dd MMMM",Locale.getDefault()).format(new Date()),dp(27),dp(138),p);
-            p.setTextSize(dp(11)); c.drawText("SWIPE UP TO OPEN ICE DASHBOARD",dp(24),h-dp(32),p);
+            drawHome(c,w,h);
             if(reveal>0.01f) drawDashboard(c,w,h);
+        }
+
+        void drawGlassCard(Canvas c,float left,float top,float right,float bottom,float radius) {
+            p.setShader(new LinearGradient(left,top,right,bottom,0x553b9fc4,0x2226d8ff,Shader.TileMode.CLAMP));
+            c.drawRoundRect(left,top,right,bottom,radius,radius,p);
+            p.setShader(null);
+            p.setColor(0x889beaff); p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(1));
+            c.drawRoundRect(left,top,right,bottom,radius,radius,p);
+            p.setStyle(Paint.Style.FILL);
+        }
+
+        int batteryPercent() {
+            Intent battery = registerReceiver(null, new android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery == null) return -1;
+            int level = battery.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+            int scale = battery.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1);
+            return level >= 0 && scale > 0 ? Math.round(level * 100f / scale) : -1;
+        }
+
+        void drawHome(Canvas c,float w,float h) {
+            p.setColor(Color.WHITE); p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+            p.setTextSize(dp(14)); c.drawText("LUNA  /  KIC",dp(24),dp(48),p);
+            p.setColor(0xffa9eaff); p.setTextSize(dp(10));
+            c.drawText("ICE BLUE INTERACTIVE LAUNCHER",dp(24),dp(66),p);
+            p.setColor(Color.WHITE); p.setTypeface(Typeface.create("sans-serif-light",Typeface.NORMAL));
+            p.setTextSize(dp(54));
+            c.drawText(new java.text.SimpleDateFormat("HH:mm",Locale.getDefault()).format(new Date()),dp(22),dp(145),p);
+            p.setColor(0xffd5f3ff); p.setTextSize(dp(14));
+            c.drawText(new java.text.SimpleDateFormat("EEEE, dd MMMM",Locale.getDefault()).format(new Date()),dp(26),dp(171),p);
+
+            float cardTop=dp(194), cardBottom=dp(274);
+            drawGlassCard(c,dp(18),cardTop,w-dp(18),cardBottom,dp(18));
+            p.setColor(0xff9beaff); p.setTextSize(dp(10)); p.setTypeface(Typeface.DEFAULT_BOLD);
+            c.drawText("DEVICE STATUS",dp(34),cardTop+dp(24),p);
+            int battery=batteryPercent();
+            p.setColor(Color.WHITE); p.setTextSize(dp(21)); p.setTypeface(Typeface.create("sans-serif-medium",0));
+            c.drawText(battery>=0 ? battery+"% BATTERY" : "BATTERY STATUS",dp(34),cardTop+dp(52),p);
+            p.setColor(0xffbcecff); p.setTextSize(dp(10)); p.setTypeface(Typeface.DEFAULT);
+            c.drawText("QUICK ACCESS  •  "+apps.size()+" APPS",dp(34),cardTop+dp(68),p);
+
+            float sectionY=Math.max(dp(315),h*0.43f);
+            p.setColor(Color.WHITE); p.setTextSize(dp(16)); p.setTypeface(Typeface.DEFAULT_BOLD);
+            c.drawText("Aplikasi favorit",dp(22),sectionY,p);
+            p.setColor(0xffa9eaff); p.setTextSize(dp(10)); p.setTypeface(Typeface.DEFAULT);
+            c.drawText("Ketuk ikon untuk membuka",dp(22),sectionY+dp(18),p);
+
+            float cell=w/4f;
+            float firstY=sectionY+dp(65);
+            for(int i=0;i<apps.size() && i<8;i++) {
+                int col=i%4,row=i/4;
+                float x=cell*(col+0.5f), y=firstY+row*dp(82);
+                p.setColor(0x5539cfff); c.drawCircle(x,y,dp(25),p);
+                AppEntry a=apps.get(i);
+                a.icon.setBounds((int)(x-dp(18)),(int)(y-dp(18)),(int)(x+dp(18)),(int)(y+dp(18)));
+                a.icon.draw(c);
+                p.setColor(Color.WHITE); p.setTextSize(dp(9));
+                String label=a.label.length()>13?a.label.substring(0,12)+"…":a.label;
+                c.drawText(label,x-p.measureText(label)/2,y+dp(40),p);
+            }
+            p.setColor(0xff9beaff); p.setTextSize(dp(10));
+            c.drawText("GESER KE ATAS UNTUK SEMUA APLIKASI",dp(22),h-dp(28),p);
+        }
+
+        void launchApp(AppEntry app) {
+            Intent launch=getPackageManager().getLaunchIntentForPackage(app.pkg);
+            if(launch!=null) {
+                try { startActivity(launch); }
+                catch(Exception ex) {
+                    android.widget.Toast.makeText(MainActivity.this,"Tidak dapat membuka "+app.label,android.widget.Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                android.widget.Toast.makeText(MainActivity.this,"Aplikasi tidak memiliki layar peluncur",android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        void launchHomeAppAt(float x,float y) {
+            if(reveal>=0.5f) return;
+            float sectionY=Math.max(dp(315),getHeight()*0.43f);
+            float firstY=sectionY+dp(65);
+            int col=(int)(x/(getWidth()/4f));
+            int row=Math.round((y-firstY)/dp(82));
+            if(col<0||col>=4||row<0||row>1) return;
+            float centerY=firstY+row*dp(82);
+            if(Math.abs(y-centerY)>dp(45)) return;
+            int index=row*4+col;
+            if(index>=0&&index<apps.size()&&index<8) launchApp(apps.get(index));
         }
         void drawDashboard(Canvas c,float w,float h) {
             float top=h*(1f-reveal);
@@ -100,17 +181,7 @@ public class MainActivity extends Activity {
             if (index < 0 || index >= apps.size() || index >= 48) return;
             float centerY = startY + row * dp(82);
             if (Math.abs(y - centerY) > dp(43)) return;
-            AppEntry app = apps.get(index);
-            Intent launch = getPackageManager().getLaunchIntentForPackage(app.pkg);
-            if (launch != null) {
-                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                try { startActivity(launch); }
-                catch (Exception ex) {
-                    android.widget.Toast.makeText(MainActivity.this, "Tidak dapat membuka " + app.label, android.widget.Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                android.widget.Toast.makeText(MainActivity.this, "Aplikasi tidak memiliki layar peluncur", android.widget.Toast.LENGTH_SHORT).show();
-            }
+            launchApp(apps.get(index));
         }
 
         @Override public boolean performClick() {
@@ -134,7 +205,7 @@ public class MainActivity extends Activity {
                     float dx=x-downX, dy=y-downY;
                     if (Math.abs(dx)<dp(12) && Math.abs(dy)<dp(12)) {
                         performClick();
-                        launchAppAt(x,y);
+                        if (reveal >= 0.5f) launchAppAt(x,y); else launchHomeAppAt(x,y);
                     } else if (dy < -dp(45)) {
                         reveal=1f;
                     } else if (dy > dp(45)) {
