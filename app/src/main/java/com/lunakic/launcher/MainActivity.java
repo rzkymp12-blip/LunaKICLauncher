@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
 
     class LunaView extends View {
         Paint p = new Paint(3);
-        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;
+        float downX, downY, fingerX, fingerY, reveal = 0f, revealAtDown = 0f;\n        boolean horizontalSwipe = false;
         String searchText = "";
         String selectedCategory = "All Apps";
         ArrayList<AppEntry> apps = new ArrayList<>();
@@ -60,11 +60,13 @@ public class MainActivity extends Activity {
                 float y=h*(0.12f+(i/3)*0.22f)+(fingerY-h/2)*0.012f;
                 c.drawCircle(x,y,dp(30+(i%3)*10),p);
             }
-            if (reveal >= 0.5f) {
-                // Dashboard is a full-screen scene; only its app dock is anchored at the bottom.
+            drawHome(c,w,h);
+            if (reveal > 0.001f) {
+                int save=c.save();
+                float offset=(1f-reveal)*(horizontalSwipe?w:h);
+                if(horizontalSwipe) c.translate(-offset,0); else c.translate(0,offset);
                 drawDashboard(c,w,h);
-            } else {
-                drawHome(c,w,h);
+                c.restoreToCount(save);
             }
         }
 
@@ -262,8 +264,13 @@ public class MainActivity extends Activity {
                     invalidate(); return true;
                 case MotionEvent.ACTION_MOVE: {
                     fingerX=x; fingerY=y;
-                    float dy=y-downY;
-                    reveal=Math.max(0f,Math.min(1f,revealAtDown - dy/(getHeight()*0.65f)));
+                    float dx=x-downX, dy=y-downY;
+                    if (Math.abs(dx)>dp(10) || Math.abs(dy)>dp(10))
+                        horizontalSwipe=Math.abs(dx)>Math.abs(dy);
+                    if(horizontalSwipe)
+                        reveal=Math.max(0f,Math.min(1f,revealAtDown - dx/(getWidth()*0.72f)));
+                    else
+                        reveal=Math.max(0f,Math.min(1f,revealAtDown - dy/(getHeight()*0.72f)));
                     invalidate(); return true;
                 }
                 case MotionEvent.ACTION_UP: {
@@ -272,10 +279,13 @@ public class MainActivity extends Activity {
                         performClick();
                         if (reveal >= 0.5f) launchAppAt(x,y);
                         else launchHomeAppAt(x,y);
-                    } else if (dy < -dp(45)) {
-                        reveal=1f;
-                    } else if (dy > dp(45)) {
-                        reveal=0f;
+                    } else {
+                        float primary=horizontalSwipe?dx:dy;
+                        boolean open=horizontalSwipe?primary< -dp(45):primary< -dp(45);
+                        boolean close=primary>dp(45);
+                        if(open) reveal=1f;
+                        else if(close) reveal=0f;
+                        else reveal=revealAtDown>=0.5f?1f:0f;
                     }
                     invalidate(); return true;
                 }
