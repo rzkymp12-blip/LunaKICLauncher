@@ -202,7 +202,7 @@ public class MainActivity extends Activity {
             p.setColor(0xffd5f3ff); p.setTextSize(dp(9)); p.setTypeface(Typeface.DEFAULT);
             c.drawText(shown.size()+" aplikasi",dp(23),top+dp(149),p);
             int cols=4; float cell=(w-dp(34))/cols; float startY=top+dp(184);
-            for(int i=0;i<shown.size() && i<48;i++) {
+            for(int i=0;i<shown.size();i++) {
                 int col=i%cols,row=i/cols; float x=dp(17)+col*cell+cell/2f,y=startY+row*dp(82);
                 if(y>h-dp(48)) break;
                 p.setColor(0x5539cfff); c.drawCircle(x,y,dp(23),p);
@@ -224,7 +224,7 @@ public class MainActivity extends Activity {
             if (col < 0 || col >= 4 || row < 0) return;
             int index = row * 4 + col;
             ArrayList<AppEntry> shown=visibleApps();
-            if (index < 0 || index >= shown.size() || index >= 48) return;
+            if (index < 0 || index >= shown.size()) return;
             float centerY = startY + row * dp(82);
             if (Math.abs(y - centerY) > dp(43)) return;
             launchApp(shown.get(index));
