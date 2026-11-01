@@ -34,6 +34,15 @@ public class MainActivity extends Activity {
         String selectedCategory = "All Apps";
         ArrayList<AppEntry> apps = new ArrayList<>();
         Bitmap homeArtwork, dashboardArtwork;
+        static class IceParticle {
+            float x,y,vx,vy,radius,life=1f;
+            IceParticle(float x,float y,float vx,float vy,float radius) {
+                this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.radius=radius;
+            }
+        }
+        ArrayList<IceParticle> iceParticles = new ArrayList<>();
+        float touchPulse=0f;
+        ValueAnimator touchAnimator;
         float density;
         LunaView() {
             super(MainActivity.this);
@@ -73,6 +82,46 @@ public class MainActivity extends Activity {
             });
             snapAnimator.start();
         }
+        void emitIce(float x,float y,int count) {
+            Random random=new Random();
+            for(int i=0;i<count;i++) {
+                double angle=random.nextDouble()*Math.PI*2;
+                float speed=dp(0.8f+random.nextFloat()*2.8f);
+                iceParticles.add(new IceParticle(x,y,(float)Math.cos(angle)*speed,
+                    (float)Math.sin(angle)*speed,dp(2f+random.nextFloat()*4f)));
+            }
+            while(iceParticles.size()>100) iceParticles.remove(0);
+            touchPulse=1f;
+            if(touchAnimator!=null) touchAnimator.cancel();
+            touchAnimator=ValueAnimator.ofFloat(1f,0f);
+            touchAnimator.setDuration(850);
+            touchAnimator.addUpdateListener(a -> {
+                touchPulse=(Float)a.getAnimatedValue();
+                for(IceParticle q:iceParticles) {
+                    q.x+=q.vx; q.y+=q.vy; q.vx*=0.975f; q.vy*=0.975f;
+                    q.life=Math.max(0f,q.life-0.028f);
+                }
+                for(int i=iceParticles.size()-1;i>=0;i--)
+                    if(iceParticles.get(i).life<=0f) iceParticles.remove(i);
+                invalidate();
+            });
+            touchAnimator.start();
+            invalidate();
+        }
+        void drawTouchEffects(Canvas c) {
+            if(touchPulse<=0f) return;
+            p.setShader(new RadialGradient(fingerX,fingerY,dp(105)*touchPulse,
+                new int[]{0x995eeaff,0x4439cfff,0x0039cfff},null,Shader.TileMode.CLAMP));
+            c.drawCircle(fingerX,fingerY,dp(105)*touchPulse,p);
+            p.setShader(null);
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(2)); p.setColor(0x99b9f5ff);
+            c.drawCircle(fingerX,fingerY,dp(22)+(1f-touchPulse)*dp(78),p);
+            p.setStyle(Paint.Style.FILL);
+            for(IceParticle q:iceParticles) {
+                p.setColor(((int)(q.life*220f)<<24)|0x00c8f7ff);
+                c.drawCircle(q.x,q.y,q.radius*q.life,p);
+            }
+        }
         @Override protected void onDraw(Canvas c) {
             float w=getWidth(), h=getHeight();
             drawLunaBackground(c,w,h,homeArtwork);
@@ -84,6 +133,7 @@ public class MainActivity extends Activity {
                 c.drawCircle(x,y,dp(30+(i%3)*10),p);
             }
             drawHome(c,w,h);
+            drawTouchEffects(c);
             // Dashboard rises from the bottom with a soft, character-like ease.
             float eased = reveal * reveal * (3f - 2f * reveal);
             if (eased > 0.001f) {
@@ -302,9 +352,11 @@ public class MainActivity extends Activity {
                 case MotionEvent.ACTION_DOWN:
                     if (snapAnimator != null) snapAnimator.cancel();
                     downX=x; downY=y; fingerX=x; fingerY=y; revealAtDown=reveal;
+                    emitIce(x,y,18);
                     invalidate(); return true;
                 case MotionEvent.ACTION_MOVE: {
                     fingerX=x; fingerY=y;
+                    if(iceParticles.size()<75 && Math.random()<0.35) emitIce(x,y,3);
                     float dx=x-downX, dy=y-downY;
                     // Only vertical gestures control the dashboard. Horizontal swipes do nothing.
                     if (Math.abs(dy)>dp(10) && Math.abs(dy)>Math.abs(dx)*1.15f) {
