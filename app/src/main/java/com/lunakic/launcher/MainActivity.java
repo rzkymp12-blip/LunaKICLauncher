@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.*;
+import java.io.InputStream;
 import android.animation.ValueAnimator;
 import android.view.animation.PathInterpolator;
 import android.view.*;
@@ -32,12 +33,16 @@ public class MainActivity extends Activity {
         String searchText = "";
         String selectedCategory = "All Apps";
         ArrayList<AppEntry> apps = new ArrayList<>();
+        Bitmap lunaArtwork;
         float density;
         LunaView() {
             super(MainActivity.this);
             density = getResources().getDisplayMetrics().density;
             fingerX = getResources().getDisplayMetrics().widthPixels/2f;
             fingerY = getResources().getDisplayMetrics().heightPixels/2f;
+            try (InputStream in = getAssets().open("luna_hok.jpg")) {
+                lunaArtwork = BitmapFactory.decodeStream(in);
+            } catch (Exception ignored) { lunaArtwork = null; }
             loadApps();
         }
         void loadApps() {
@@ -66,8 +71,7 @@ public class MainActivity extends Activity {
         }
         @Override protected void onDraw(Canvas c) {
             float w=getWidth(), h=getHeight();
-            p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff061326,0xff103957,0xff07172d},null,Shader.TileMode.CLAMP));
-            c.drawRect(0,0,w,h,p); p.setShader(null);
+            drawLunaBackground(c,w,h,true);
             // Ice-blue ambient glow follows the user's finger.
             p.setColor(0x1839cfff);
             for(int i=0;i<10;i++) {
@@ -84,6 +88,22 @@ public class MainActivity extends Activity {
                 c.translate(0,offset);
                 drawDashboard(c,w,h);
                 c.restoreToCount(save);
+            }
+        }
+
+        void drawLunaBackground(Canvas c,float w,float h,boolean home) {
+            if (lunaArtwork != null && !lunaArtwork.isRecycled()) {
+                float scale=Math.max(w/lunaArtwork.getWidth(),h/lunaArtwork.getHeight());
+                float dw=lunaArtwork.getWidth()*scale, dh=lunaArtwork.getHeight()*scale;
+                RectF dst=new RectF((w-dw)/2f,(h-dh)/2f,(w+dw)/2f,(h+dh)/2f);
+                p.setAlpha(255); p.setColor(Color.WHITE);
+                c.drawBitmap(lunaArtwork,null,dst,p);
+                p.setShader(new LinearGradient(0,0,0,h,
+                    new int[]{0x55101d35,0x22101d35,0x77101d35},null,Shader.TileMode.CLAMP));
+                c.drawRect(0,0,w,h,p); p.setShader(null);
+            } else {
+                p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff061326,0xff103957,0xff07172d},null,Shader.TileMode.CLAMP));
+                c.drawRect(0,0,w,h,p); p.setShader(null);
             }
         }
 
@@ -204,9 +224,8 @@ public class MainActivity extends Activity {
         }
 
         void drawDashboard(Canvas c,float w,float h) {
-            // Full-screen dashboard canvas. Do not leave the home-screen widgets visible behind it.
-            p.setShader(new LinearGradient(0,0,w,h,new int[]{0xff061326,0xff102f50,0xff06172d},null,Shader.TileMode.CLAMP));
-            c.drawRect(0,0,w,h,p); p.setShader(null);
+            // Keep Luna artwork as the full-screen scene on the dashboard too.
+            drawLunaBackground(c,w,h,false);
             p.setColor(0x1a48bfff);
             for(int i=0;i<12;i++) {
                 float gx=w*(0.08f+(i%3)*0.42f), gy=h*(0.08f+(i/3)*0.23f);
