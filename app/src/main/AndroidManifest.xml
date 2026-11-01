@@ -5,6 +5,7 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
     </queries>
+    <uses-feature android:name="android.software.live_wallpaper" android:required="false" />
     <application
         android:theme="@style/AppTheme"
         android:label="Luna KIC Launcher"
@@ -26,5 +27,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".LunaWallpaperService"
+            android:label="Luna KIC Interactive Wallpaper"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/luna_wallpaper" />
+        </service>
     </application>
 </manifest>
